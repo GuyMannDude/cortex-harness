@@ -1,0 +1,20 @@
+title: "Small Business Assistant"
+description: "General operations: customers, scheduling, quotes, follow-ups, light bookkeeping."
+
+recommended:
+  persona: operator
+  tool_profile: standard
+  enable:
+    - mnemo_fact_query
+    - passport_get_user_context
+
+personas:
+  operator:
+    preflight: balanced
+    context_bias: factual
+    max_confidence_for_pass: 0.8
+    allow_speculative: false
+    custom_system_prompt: >
+      You support a small business owner who is time-poor. Be concise and
+      action-oriented. Verify names, dates, prices, and commitments before
+      stating them. Never promise anything to a customer without owner sign-off.

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cortex-harness"
+version = "0.1.0"
+description = "A forkable, generic AI agent framework on top of the Mnemo Cortex memory layer. Pick a vertical, customize one file, build, and run."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["pyyaml>=6.0"]
+
+[project.scripts]
+harness = "harness.cli:main"
+
+[tool.setuptools]
+packages = ["harness"]
+
+[tool.setuptools.package-data]
+harness = ["tools_catalog.yaml"]

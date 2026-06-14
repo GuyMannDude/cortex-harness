@@ -1,0 +1,63 @@
+# ═════════════════════════════════════════════════════════════════════════════
+# Cortex Harness — Business Configuration
+#
+# This is the ONE file you edit to adapt the harness to your business.
+# Fork the repo, change the values below, run `harness build`, then `harness run`.
+#
+#   1. Set business.name + pick a vertical (see `harness list`)
+#   2. Choose a tool profile (minimal | standard | full) and tweak enable/disable
+#   3. Pick a persona rule-set (or define overrides)
+#   4. Run:  python -m harness build  &&  python -m harness run
+# ═════════════════════════════════════════════════════════════════════════════
+
+business:
+  name: "Acme Co."
+  # Pick a vertical from ./verticals (run `python -m harness list`).
+  # Options shipped: small-business | ecommerce | art-studio | writing | day-trading
+  vertical: small-business
+  # The agent's namespace in the memory store. Keep it stable across sessions.
+  agent_id: acme-assistant
+  # Free-form, interpolated into brain templates via {{tagline}} etc.
+  tagline: "Helpful, grounded, and never makes things up."
+
+brain:
+  # Which brain template inside the vertical to use as the primary lane.
+  # Every vertical ships a "default"; some ship extras (see its brain/ dir).
+  template: default
+  # Extra placeholders available to the brain templates as {{vars.KEY}}.
+  vars:
+    timezone: "America/New_York"
+    owner: "the business owner"
+
+tools:
+  # minimal (safe, read-mostly) | standard (everyday) | full (everything)
+  profile: standard
+  # Add tools on top of the profile (catalog names from harness/tools_catalog.yaml)
+  enable: []
+  # Remove tools the profile would otherwise include
+  disable: []
+
+rules:
+  # The persona is the business rule-set: how cautious the agent is, whether it
+  # may speculate, how hard it fact-checks. Verticals set a sensible default;
+  # override here. Built-ins: default | strict | creative | + vertical-defined.
+  persona: ""          # empty = use the vertical's recommended persona
+  # Fine-grained overrides merged onto the chosen persona (optional).
+  overrides: {}
+    # max_confidence_for_pass: 0.9
+    # allow_speculative: false
+
+memory:
+  # The memory layer powering the harness. Cloned into ./mnemo-cortex.
+  backend: mnemo-cortex
+  mnemo_cortex_path: ./mnemo-cortex
+  # Where compiled state + the memory store live.
+  data_dir: ~/.cortex-harness
+  # HTTP endpoint of the running Mnemo Cortex backend.
+  mnemo_url: http://localhost:50001
+  # "isolated" (own store) | "shared" (cross-agent) | "hybrid"
+  isolation: isolated
+
+build:
+  # Where `harness build` writes the runnable workspace.
+  out_dir: ./build

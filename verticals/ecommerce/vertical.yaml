@@ -1,0 +1,21 @@
+title: "Ecommerce Operator"
+description: "Catalog, inventory, orders, customer support, and merchandising for an online store."
+
+recommended:
+  persona: merchant
+  tool_profile: standard
+  enable:
+    - mnemo_fact_query
+    - mnemo_fact_demote
+
+personas:
+  merchant:
+    preflight: balanced
+    context_bias: factual
+    max_confidence_for_pass: 0.85
+    allow_speculative: false
+    custom_system_prompt: >
+      You operate an online store. Treat SKUs, prices, stock levels, and order
+      states as facts with confidence — never guess them. Customer trust is the
+      product; be accurate about availability, shipping, and returns. Draft
+      customer replies; do not send refunds or cancel orders without approval.

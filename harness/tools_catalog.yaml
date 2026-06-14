@@ -1,0 +1,188 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Cortex Harness — Tool Catalog
+#
+# The single source of truth for every tool the harness can expose to an agent.
+# Each tool maps to a capability provided by the Mnemo Cortex memory layer
+# (via its MCP bridge). The "tool loader" reads this file, applies the chosen
+# profile + per-business enable/disable, and compiles the result into the
+# generated MCP config and the agent's TOOLS brain lane.
+#
+# Fields per tool:
+#   group        : logical grouping (memory | facts | brain | passport | bus | lifecycle)
+#   summary      : one-line description shown to the agent
+#   when         : guidance on WHEN the agent should reach for it
+#   requires     : env/feature prerequisites the compiler validates
+#   safe         : true = read-only / low-risk; false = writes state
+# ─────────────────────────────────────────────────────────────────────────────
+
+groups:
+  memory:    "Semantic memory — save and recall by meaning across sessions."
+  facts:     "Structured (entity, attribute, value) lookups with confidence."
+  brain:     "Brain lanes — the agent's identity, rules, and reference docs."
+  passport:  "Behavioral observation queue (review before promotion)."
+  bus:       "Agent-to-agent messaging."
+  lifecycle: "Session boot/teardown."
+
+tools:
+  # ── lifecycle ──────────────────────────────────────────────────────────────
+  agent_startup:
+    group: lifecycle
+    summary: "Boot the agent: load its brain lane + recent memory at session start."
+    when: "Call ONCE at the start of every session, before doing anything else."
+    requires: [brain_dir]
+    safe: true
+
+  session_end:
+    group: lifecycle
+    summary: "Flush the session: summarize and persist what happened."
+    when: "Call when wrapping up a session so the next cold start feels warm."
+    requires: []
+    safe: false
+
+  # ── memory ─────────────────────────────────────────────────────────────────
+  mnemo_recall:
+    group: memory
+    summary: "Semantic recall of past memories relevant to the current task."
+    when: "Whenever you need prior context, decisions, or history."
+    requires: []
+    safe: true
+
+  mnemo_search:
+    group: memory
+    summary: "Keyword/semantic search across the memory store."
+    when: "When you need to locate a specific past note rather than broad context."
+    requires: []
+    safe: true
+
+  mnemo_save:
+    group: memory
+    summary: "Save a distilled memory (decision, fact, outcome) for future sessions."
+    when: "After any meaningful decision, result, or learned preference."
+    requires: []
+    safe: false
+
+  mnemo_share:
+    group: memory
+    summary: "Share a memory with other agents in a shared store."
+    when: "Multi-agent setups only — surface something a teammate agent needs."
+    requires: [shared_store]
+    safe: false
+
+  # ── facts ──────────────────────────────────────────────────────────────────
+  mnemo_fact_get:
+    group: facts
+    summary: "Exact lookup of one (entity, attribute) value with confidence."
+    when: "For names, settings, prices, IDs — anything that is a key-value, not a search."
+    requires: []
+    safe: true
+
+  mnemo_fact_query:
+    group: facts
+    summary: "Filtered list of facts (by entity, attribute, or confidence)."
+    when: "To enumerate what you know about an entity."
+    requires: []
+    safe: true
+
+  mnemo_fact_save:
+    group: facts
+    summary: "Assert a fact; promotes/demotes confidence as evidence accrues."
+    when: "When you learn a concrete attribute worth exact recall later."
+    requires: []
+    safe: false
+
+  mnemo_fact_demote:
+    group: facts
+    summary: "Mark a fact wrong without supplying a replacement."
+    when: "When a previously stored fact is contradicted."
+    requires: []
+    safe: false
+
+  # ── brain ──────────────────────────────────────────────────────────────────
+  read_brain_file:
+    group: brain
+    summary: "Read a markdown file from the brain directory."
+    when: "To consult rules, playbooks, or reference docs mid-task."
+    requires: [brain_dir]
+    safe: true
+
+  list_brain_files:
+    group: brain
+    summary: "List the files available in the brain directory."
+    when: "To discover what reference material exists."
+    requires: [brain_dir]
+    safe: true
+
+  write_brain_file:
+    group: brain
+    summary: "Create or update a brain file."
+    when: "When a rule or playbook should be durably updated. Use sparingly."
+    requires: [brain_dir]
+    safe: false
+
+  # ── passport ───────────────────────────────────────────────────────────────
+  passport_get_user_context:
+    group: passport
+    summary: "Read the verified user/behavior context."
+    when: "To personalize based on confirmed user traits."
+    requires: []
+    safe: true
+
+  passport_observe_behavior:
+    group: passport
+    summary: "Queue a behavioral observation for later review."
+    when: "When you notice a pattern worth confirming — never act on it yet."
+    requires: []
+    safe: false
+
+  passport_list_pending_observations:
+    group: passport
+    summary: "List observations awaiting human review."
+    when: "During a review pass."
+    requires: []
+    safe: true
+
+  passport_promote_observation:
+    group: passport
+    summary: "Promote a reviewed observation into verified context."
+    when: "Only after explicit human confirmation."
+    requires: []
+    safe: false
+
+  # ── bus ────────────────────────────────────────────────────────────────────
+  bus_send:
+    group: bus
+    summary: "Send a message to another agent over the configured agent message bus."
+    when: "Multi-agent coordination only."
+    requires: [bus]
+    safe: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Profiles: named bundles of tools. A business picks a profile, then layers
+# enable/disable on top. Use "*" to mean every tool in the catalog.
+# ─────────────────────────────────────────────────────────────────────────────
+profiles:
+  minimal:
+    description: "Read-mostly: boot, recall, fact lookup. Safest starting point."
+    tools:
+      - agent_startup
+      - mnemo_recall
+      - mnemo_fact_get
+      - read_brain_file
+
+  standard:
+    description: "The everyday kit: memory + facts read/write + brain + lifecycle."
+    tools:
+      - agent_startup
+      - session_end
+      - mnemo_recall
+      - mnemo_search
+      - mnemo_save
+      - mnemo_fact_get
+      - mnemo_fact_query
+      - mnemo_fact_save
+      - read_brain_file
+      - list_brain_files
+
+  full:
+    description: "Everything in the catalog, including passport, bus, and writes."
+    tools: ["*"]

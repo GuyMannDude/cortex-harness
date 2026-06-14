@@ -1,0 +1,13 @@
+# Shared defaults inherited by every vertical (deep-merged; a vertical's own
+# vertical.yaml overrides these keys).
+title: "Base"
+description: "Shared foundation — not selectable on its own."
+
+recommended:
+  persona: default
+  tool_profile: standard
+  enable: []
+
+# Verticals may define custom personas here; these are the harness-wide fallbacks
+# mirrored from Mnemo Cortex. Override per vertical as needed.
+personas: {}

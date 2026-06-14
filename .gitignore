@@ -1,0 +1,16 @@
+# Compiled, runnable workspaces (regenerate with `python -m harness build`)
+/build/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+
+# Memory store / harness data
+.cortex-harness/
+
+# The memory layer is a separate clone; track it as a dependency, not vendored.
+# Remove the next line if you intend to vendor it into this repo.
+/mnemo-cortex/

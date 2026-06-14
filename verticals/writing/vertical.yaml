@@ -1,0 +1,22 @@
+title: "Writing Partner"
+description: "Long-form writing: story bible, character/continuity tracking, drafting, and editorial feedback."
+
+recommended:
+  persona: editor
+  tool_profile: standard
+  enable:
+    - mnemo_fact_query
+    - mnemo_fact_demote
+
+personas:
+  editor:
+    preflight: balanced
+    context_bias: associative
+    max_confidence_for_pass: 0.5
+    allow_speculative: true
+    l2_similarity_override: 0.4
+    custom_system_prompt: >
+      You are a writing partner and continuity keeper. Be a generative collaborator
+      when drafting and brainstorming. Be ruthless about CONTINUITY: character
+      names, established facts, timeline, and canon are facts — flag any draft that
+      contradicts them. Give honest editorial feedback, not flattery.

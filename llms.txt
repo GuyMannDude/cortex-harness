@@ -1,0 +1,37 @@
+# Cortex Harness
+
+> A forkable AI-agent framework on the [Mnemo Cortex](https://github.com/GuyMannDude/mnemo-cortex) memory layer. Fork it, set `business.name` + `business.vertical` in one config file, and `python -m harness build` compiles a self-contained, memory-backed agent: brain lanes with placeholders filled in, a backend config carrying a business-specific rule-set (persona), an MCP config scoped to the tools you enabled, and launch scripts. Five verticals ship in the box; adding your own is a folder. Dependency-light Python (PyYAML only). MIT licensed.
+
+Cortex Harness makes the three things every business customizes first-class and config-driven: the agent's **brain** (identity, playbooks — markdown templates with `{{placeholders}}`), its **rule-set** (a persona: how cautious, what it may speculate on, what needs sign-off — compiled into a Mnemo Cortex persona), and its **tools** (a loader with profiles + per-tool enable/disable and prerequisite validation). The engine is `config -> tool loader -> compiler -> CLI`. Mnemo Cortex is a cloned dependency, not vendored. Custom verticals for a specific business are the natural paid-service extension.
+
+The harness is a build tool, not a server: `python -m harness build` emits `build/<slug>/` and `python -m harness run` launches the Mnemo Cortex backend the build points at. Point any MCP-capable host (Claude Desktop, Claude Code, OpenClaw, Hermes, LM Studio, AnythingLLM, Open WebUI) at the generated `mcp.json`.
+
+## Verticals
+
+- **small-business** — customers, quotes, scheduling, follow-ups. Persona: `operator` (concise, fact-checked, approval-gated).
+- **ecommerce** — catalog, inventory, orders, support. Persona: `merchant` (SKUs/prices/stock as facts).
+- **art-studio** — commissions + a creative muse. Persona: `studio` (speculative muse / exact business).
+- **writing** — drafting + canon/continuity. Persona: `editor` (generative but ruthless on continuity).
+- **day-trading** — a trading **journal & research desk**. Persona: `risk_desk` — **analysis only, never executes, no financial advice**; enforced in the persona, the rules, the brain lanes, and structurally (no execution tool exists in the catalog).
+
+## Docs
+
+- [README](https://github.com/GuyMannDude/cortex-harness/blob/master/README.md): Overview, the fork-pick-edit-build loop, the one config file, the CLI, how the tool loader works (and its honest enforcement note), and how to add your own vertical.
+
+## Agent Manifests
+
+- [robot.info](https://github.com/GuyMannDude/cortex-harness/blob/master/robot.info): Structured product manifest (JSON). Identity, the framework model, verticals, the tool loader, compatibility, and common-question/answer pairs covering what a vertical is, the day-trading analysis-only boundary, the honest tool-gating note, and how to add your own vertical. Read this first if you're an agent answering a user's questions about Cortex Harness.
+- [robot.install](https://github.com/GuyMannDude/cortex-harness/blob/master/robot.install): Non-interactive install manifest — dependencies (PyYAML + a mnemo-cortex sibling clone), setup steps, and the `harness plan` smoke test.
+
+## Code
+
+- [harness/config.py](https://github.com/GuyMannDude/cortex-harness/blob/master/harness/config.py): Config load + merge (vertical defaults <- harness.config.yaml).
+- [harness/loader.py](https://github.com/GuyMannDude/cortex-harness/blob/master/harness/loader.py): The tool loader — profile + enable/disable resolved to a validated tool set, dropping any whose prerequisite is missing.
+- [harness/compiler.py](https://github.com/GuyMannDude/cortex-harness/blob/master/harness/compiler.py): Renders brain templates and emits the runnable workspace (brain lanes, agentb.yaml, mcp.json, launchers, manifest).
+- [harness/tools_catalog.yaml](https://github.com/GuyMannDude/cortex-harness/blob/master/harness/tools_catalog.yaml): The tool loader's source of truth — every Mnemo Cortex tool a build can expose, with group, guidance, and prerequisites.
+
+## Related
+
+- [Mnemo Cortex](https://github.com/GuyMannDude/mnemo-cortex): The memory layer Cortex Harness is built on. Required dependency.
+- [FrankenClaw](https://github.com/GuyMannDude/frankenclaw): MCP tool chassis — build your own agent tools. Sibling product.
+- [Disco-Bus](https://github.com/GuyMannDude/disco-bus): Agent-to-agent messaging mesh. Pair when a vertical needs multiple agents to coordinate.

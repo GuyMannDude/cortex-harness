@@ -1,0 +1,55 @@
+{
+  // Cortex Harness — robot.install manifest
+  //
+  // Non-interactive install recipe for AI agents and CI. Single JSON
+  // object, // line comments allowed. Spec sibling of robot.info / llms.txt.
+  //
+  // Cortex Harness is a build tool, not a long-running service: there is
+  // no daemon, no port, no systemd unit for the harness itself. Installing
+  // it means making the CLI runnable; "running" a business means compiling
+  // it (python -m harness build) and launching the Mnemo Cortex backend the
+  // build points at. This manifest describes the one-time setup.
+
+  "runtime": "python>=3.10",
+
+  "dependencies": {
+    // The harness CLI's only third-party dependency.
+    "pip": ["pyyaml>=6.0"],
+    // The memory layer the harness builds on. Cloned as a sibling, NOT
+    // vendored — kept out of this repo by .gitignore. Override the
+    // location with memory.mnemo_cortex_path in harness.config.yaml.
+    "siblings": [
+      {
+        "name": "mnemo-cortex",
+        "clone": "git clone https://github.com/GuyMannDude/mnemo-cortex.git ./mnemo-cortex",
+        "purpose": "Required. The harness compiles a backend config for it and launches it; `python -m harness doctor` checks it is present."
+      }
+    ],
+    // Only needed to RUN a compiled build's MCP bridge, not to install the CLI.
+    "optional": ["node>=18 (Mnemo Cortex MCP bridge)"]
+  },
+
+  "steps": [
+    {"run": "pip install -r requirements.txt", "purpose": "Install the harness CLI dependency (PyYAML)."},
+    {"run": "git clone https://github.com/GuyMannDude/mnemo-cortex.git ./mnemo-cortex", "purpose": "Fetch the memory-layer dependency alongside the harness.", "skip_if": "./mnemo-cortex already present"},
+    {"run": "python -m harness doctor", "purpose": "Verify the environment (Python, PyYAML, mnemo-cortex present, Node)."}
+  ],
+
+  // After install, configuration is a single file the operator edits, then a build.
+  "configure": {
+    "file": "harness.config.yaml",
+    "required_fields": ["business.name", "business.vertical"],
+    "vertical_choices": ["small-business", "ecommerce", "art-studio", "writing", "day-trading"],
+    "then": "python -m harness build    # compiles build/<slug>/ ; or `python -m harness run` to build and launch the backend"
+  },
+
+  // Smoke test: the harness compiles a build with the shipped default config
+  // and confirms the workspace was written. No network, no model calls.
+  "smoke_test": {
+    "enabled": true,
+    "run": "python -m harness plan",
+    "expect": "Prints the resolved persona and the enabled-vs-dropped tool set with no errors and no files written."
+  },
+
+  "produces": "A runnable workspace at build/<slug>/ (brain lanes, agentb.yaml, mcp.json, start.sh/.ps1, TOOLS.md, manifest.json). Point your MCP host at build/<slug>/mcp.json."
+}

@@ -1,0 +1,175 @@
+{
+  // robot.info v0.2 — Cortex Harness
+  //
+  // Structured product manifest for AI agents. Paired with robot.install
+  // (setup) and llms.txt (docs index). Spec: mnemo-cortex/ROBOT-INFO-SPEC.md.
+  //
+  // Single JSON object, UTF-8. JavaScript-style // line comments are
+  // stripped before parsing.
+
+  "robot_info_version": "0.2",
+
+  "name": "Cortex Harness",
+  "tagline": "A forkable AI-agent framework on the Mnemo Cortex memory layer. Pick a business vertical, edit one config file, build, and run.",
+  "summary": "Cortex Harness turns the Mnemo Cortex memory layer into a memory-backed agent you can ship for a specific business. Fork it, set business.name + business.vertical in one config file, and the compiler renders a self-contained runnable workspace: brain lanes (identity, rules, playbooks) with placeholders filled in, a Mnemo Cortex backend config carrying a business-specific rule-set (persona), an MCP client config scoped to the tools you turned on, and launch scripts. Five verticals ship in the box (small-business, ecommerce, art-studio, writing, day-trading); adding your own is a folder. The engine is dependency-light Python (PyYAML only): config -> tool loader -> compiler -> CLI. Mnemo Cortex is a cloned dependency, not vendored. Custom verticals for a specific business are the natural paid-service extension.",
+  "backstory": "Mnemo Cortex gives an agent persistent memory, but every business that wants to use it has to wire the same three things by hand: the agent's brain/identity, a rule-set for how cautious it should be, and which memory tools to expose. Cortex Harness makes those three first-class and config-driven, so the path from 'I have a memory layer' to 'I have a memory-backed assistant for my business' is fork, pick a vertical, edit one file, build. It was built clean-room — a fresh agent given only Mnemo Cortex as a dependency and asked to design the framework from first principles — then reviewed and finalized against the rest of the Project Sparks stack.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "homepage": "https://projectsparks.ai/cortex-harness",
+  "source": "https://github.com/GuyMannDude/cortex-harness",
+  "contact": "guy@projectsparks.ai",
+  "maintainer": "Project Sparks",
+
+  "capabilities": [
+    "Verticals — a business type is a folder under verticals/ with a vertical.yaml (title, recommended persona/profile, custom personas), a rules.md rule-set, and brain templates. Five ship in the box; _base/ is inherited by every vertical so a new one only states what's different.",
+    "One-file configuration — set business.name, business.vertical, a tool profile, and (optionally) a persona in harness.config.yaml. Everything else is derived. Blank fields fall back to the vertical's recommended defaults.",
+    "Tool loader — pick a profile (minimal / standard / full), then layer enable/disable. The loader validates each tool's prerequisites against your deployment and DROPS a tool (with a reason) if its prerequisite is missing — e.g. mnemo_share is dropped unless memory.isolation is shared; bus tools drop unless a bus is configured.",
+    "Brain templates — markdown lanes with {{placeholder}} substitution rendered from your config. The rules and tools lanes are regenerated from live config on every build so they can never drift from what was actually compiled.",
+    "Persona rule-sets — a vertical's persona compiles into a Mnemo Cortex persona block (preflight rigor, context bias, confidence threshold, whether speculation is allowed). The persona IS the business's rule-set.",
+    "Deterministic compile — `harness build` writes build/<slug>/ with brain lanes, agentb.yaml, mcp.json, start.sh/.ps1, TOOLS.md, and a manifest.json. Re-runnable; edits to generated files are overwritten by design.",
+    "CLI — list (verticals), doctor (environment readiness), plan (dry-run: enabled vs dropped tools, no writes), build (compile), run (build then launch the Mnemo Cortex backend)."
+  ],
+
+  "exposes": {
+    // Cortex Harness is NOT itself an MCP server. It COMPILES a configuration
+    // that wires the Mnemo Cortex MCP bridge. The tools below are the
+    // memory-layer tools the harness can scope into a build's mcp.json /
+    // TOOLS lane — they are served by Mnemo Cortex, not by the harness.
+    "cli": [
+      {"command": "python -m harness list", "purpose": "List the available verticals."},
+      {"command": "python -m harness doctor", "purpose": "Check the environment is ready (Python, PyYAML, mnemo-cortex present, Node for the bridge)."},
+      {"command": "python -m harness plan", "purpose": "Dry-run: show the persona and the tools that would be enabled vs dropped (with reasons). No files written."},
+      {"command": "python -m harness build", "purpose": "Compile the configured business into build/<slug>/ — a self-contained runnable workspace."},
+      {"command": "python -m harness run", "purpose": "Build, then launch the Mnemo Cortex memory backend for this business."}
+    ],
+    "compiles_tools_from": "Mnemo Cortex (via its MCP bridge): memory (mnemo_recall/search/save/share), facts (mnemo_fact_get/query/save/demote), brain lanes (read/list/write_brain_file), passport (behavioral observation), lifecycle (agent_startup/session_end). A build's tool set is the subset the business turned on."
+  },
+
+  "install": {
+    "robot_install": "./robot.install",
+    "manual_docs": "https://github.com/GuyMannDude/cortex-harness#quickstart",
+    "platforms": ["linux", "macos", "windows-wsl2"],
+    "runtime": "python>=3.10",
+    "dependencies": [
+      "pyyaml>=6.0 (the only third-party dependency of the harness CLI)",
+      "Mnemo Cortex — cloned alongside as ./mnemo-cortex (the memory layer; a separate clone, not vendored)",
+      "Node 18+ (only to run the Mnemo Cortex MCP bridge that a compiled build points at)"
+    ]
+  },
+
+  "compatibility": {
+    "mcp_hosts": [
+      "Claude Desktop",
+      "Claude Code",
+      "OpenClaw",
+      "Hermes Agent",
+      "LM Studio",
+      "AnythingLLM",
+      "Open WebUI",
+      "Any stdio MCP client"
+    ],
+    "models": "Any tool-capable LLM. The compiled agent's behavior is shaped by the vertical's persona and brain lanes; the harness itself runs no model.",
+    "protocols": ["MCP/2025-03-26 (via the Mnemo Cortex bridge a build points at)", "stdio transport"]
+  },
+
+  "privacy": {
+    "telemetry": "none",
+    "data_location": "The harness writes only to its build/ directory. All agent memory lives in the Mnemo Cortex backend a build launches (local SQLite by default; data_dir defaults to ~/.cortex-harness). No data leaves your machine unless you configure a remote Mnemo backend or a tool that makes outbound calls.",
+    "auth": "No auth layer in the harness. A compiled build's memory backend binds to 127.0.0.1 by default.",
+    "outbound_calls": [
+      "The harness CLI makes no outbound calls.",
+      "A compiled agent makes only the calls its configured Mnemo backend + enabled tools make."
+    ]
+  },
+
+  "related": [
+    {"name": "Mnemo Cortex", "url": "https://github.com/GuyMannDude/mnemo-cortex", "purpose": "The memory layer Cortex Harness is built on. Required dependency — a build compiles a config for it and launches it."},
+    {"name": "FrankenClaw", "url": "https://github.com/GuyMannDude/frankenclaw", "purpose": "MCP tool chassis — build your own agent tools. Sibling product in the Project Sparks stack."},
+    {"name": "Disco-Bus", "url": "https://github.com/GuyMannDude/disco-bus", "purpose": "Agent-to-agent messaging mesh. Pair when a vertical needs multiple agents to coordinate."},
+    {"name": "robot.info spec", "url": "https://github.com/GuyMannDude/mnemo-cortex/blob/master/ROBOT-INFO-SPEC.md", "purpose": "Schema specification for this manifest format."}
+  ],
+
+  "common_questions": [
+    {
+      "q": "What is Cortex Harness?",
+      "a": "A forkable framework that turns the Mnemo Cortex memory layer into a memory-backed agent for a specific business. You fork it, set your business name and pick a vertical in one config file, run `python -m harness build`, and you get a runnable workspace: brain lanes, a memory-backend config carrying a business rule-set, an MCP config scoped to the tools you enabled, and launch scripts."
+    },
+    {
+      "q": "How is it different from just using Mnemo Cortex directly?",
+      "a": "Mnemo Cortex is the memory engine. Cortex Harness is the layer on top that makes the three things every business customizes first-class and config-driven: the agent's brain/identity (brain templates), how cautious it is (persona rule-sets), and which memory tools it sees (the tool loader). Without the harness you wire those by hand for each business; with it, you edit one file and build."
+    },
+    {
+      "q": "What is a vertical?",
+      "a": "A vertical is a business type, shipped as a folder under verticals/: a vertical.yaml (title, recommended persona + tool profile, any custom personas), a rules.md rule-set, and brain templates (identity, playbook). Five ship in the box: small-business, ecommerce, art-studio, writing, and day-trading. Everything in verticals/_base/ is inherited, so a new vertical only states what is different."
+    },
+    {
+      "q": "Does the day-trading vertical place trades or give financial advice?",
+      "a": "No. The day-trading vertical is a trading journal and research desk only — analysis and record-keeping. It never places orders, moves money, or tells the user to buy or sell, and it states plainly that nothing it says is financial advice. This is enforced in the persona's system prompt, the rule-set, and the brain lanes — and structurally: the tool catalog contains no broker or execution tool, so there is nothing to place a trade with. Its highest value is holding the trader to their OWN written rules."
+    },
+    {
+      "q": "When I disable a tool, is the agent truly blocked from using it?",
+      "a": "Today the enabled-tools set scopes the agent at the instruction level: the generated brain/tools.md lane tells the agent exactly which tools to use, and the set is recorded in the build's mcp.json as HARNESS_ENABLED_TOOLS for hosts that honor an allow-list. Hard host-level gating — the Mnemo Cortex bridge filtering tool registration down to the allow-list — is on the roadmap. Until then, treat the tool loader as scoping plus documentation, not a hard security boundary."
+    },
+    {
+      "q": "How do I add my own vertical?",
+      "a": "Copy a vertical folder under verticals/, edit vertical.yaml (title, recommended persona/profile), write rules.md (your business rules, supports {{placeholders}}), and add brain templates (00-identity.md, 20-playbook.md). Set business.vertical to your folder name and build. _base/ is inherited automatically, so you only state what differs."
+    },
+    {
+      "q": "What does a build actually produce?",
+      "a": "build/<slug>/ containing: brain/ (rendered identity/rules/tools/playbook lanes), agentb.yaml (the Mnemo Cortex backend config carrying your persona rule-set), mcp.json (MCP client config with your enabled tools + the bridge pointed at your brain dir), start.sh and start.ps1 (launch the memory backend), TOOLS.md (what the loader turned on and dropped), and manifest.json (a machine-readable record). Regenerate anytime; edits to generated files are overwritten."
+    },
+    {
+      "q": "Is Mnemo Cortex bundled into this repo?",
+      "a": "No — it is a separate clone you place alongside the harness as ./mnemo-cortex, and it is kept out of this repo by .gitignore (a dependency, not vendored). Clone it next to the harness, or point memory.mnemo_cortex_path at an existing checkout."
+    }
+  ],
+
+  // ─── v0.2 user-facing layer ──────────────────────────────────────────
+  // Plain-language sections an AI reads to explain Cortex Harness to a
+  // non-developer user. Written for the human on the other side of the AI.
+
+  "why": "Your AI forgets everything between sessions, and wiring up a memory system for a specific business — a bakery, an online store, a writing project — means repeating the same fiddly setup every time. Cortex Harness does that setup for you. You pick the kind of business you're running, fill in your name in one file, and it builds you an assistant that remembers across sessions, follows rules you can set (how careful it is, what it's allowed to guess at, what needs your sign-off), and only has the abilities you switch on. It runs on your own computer, your data stays local, and adding a new kind of business is just copying a folder.",
+
+  "install_steps": [
+    {"step": 1, "instruction": "Make sure you have Python 3.10 or newer."},
+    {"step": 2, "instruction": "Download the harness: run 'git clone https://github.com/GuyMannDude/cortex-harness.git' and go into the new 'cortex-harness' folder."},
+    {"step": 3, "instruction": "Get the memory layer it builds on: from inside that folder run 'git clone https://github.com/GuyMannDude/mnemo-cortex.git ./mnemo-cortex'."},
+    {"step": 4, "instruction": "Install the one dependency the harness needs: 'pip install -r requirements.txt' (it's just PyYAML)."},
+    {"step": 5, "instruction": "See what you can build with 'python -m harness list', then check your setup with 'python -m harness doctor'."},
+    {"step": 6, "instruction": "Open harness.config.yaml and set your business name and pick a vertical (e.g. small-business). Preview with 'python -m harness plan', then compile with 'python -m harness build'."},
+    {"step": 7, "instruction": "Run it: 'python -m harness run' builds and launches the memory backend. Point your AI app (Claude Desktop, Claude Code, etc.) at the generated build/<you>/mcp.json."}
+  ],
+
+  "works_with": [
+    {"name": "Claude Code", "how": "Point it at the generated build/<you>/mcp.json, or add the Mnemo Cortex bridge entry that file describes."},
+    {"name": "Claude Desktop", "how": "Copy the mcpServers block from the generated mcp.json into claude_desktop_config.json and restart."},
+    {"name": "OpenClaw / Hermes Agent", "how": "Register the Mnemo Cortex MCP bridge from the generated mcp.json; the harness pre-fills BRAIN_DIR and the enabled-tools list."},
+    {"name": "LM Studio / AnythingLLM / Open WebUI", "how": "Add the generated stdio MCP server entry in the app's settings."},
+    {"name": "Mnemo Cortex", "how": "Required dependency — the harness compiles its backend config and launches it. 'python -m harness run' starts it for you."}
+  ],
+
+  "extensibility": "Adding a vertical is the whole point. Copy a folder under verticals/, edit vertical.yaml (title, recommended persona and tool profile, any custom personas), write your rules.md (plain markdown, supports {{placeholders}} like the business name), and add brain templates (00-identity.md for who the agent is, 20-playbook.md for how it works day to day). Everything in verticals/_base/ — shared identity, memory protocol, base rules — is inherited automatically, so you only write what is different. Set business.vertical to your folder name and build. The tool catalog (harness/tools_catalog.yaml) is editable too: add or regroup the memory-layer tools a build can expose, with per-tool prerequisites the loader validates. Everything is MIT-licensed and built to be forked.",
+
+  "tips": [
+    "Run `python -m harness plan` before building — it shows the persona and exactly which tools would be enabled vs dropped (and why), without writing anything.",
+    "Blank fields in harness.config.yaml fall back to the vertical's recommended defaults — leave rules.persona empty to use the vertical's recommended rule-set.",
+    "The generated brain/rules.md and brain/tools.md are rebuilt from live config on every build, so they can never drift from what was actually compiled. Don't hand-edit them — change the vertical or the config and rebuild.",
+    "A tool whose prerequisite is missing is dropped with a reason, not silently exposed — e.g. mnemo_share needs memory.isolation: shared. Check the plan output to see what dropped.",
+    "memory.isolation controls whether this agent's store is isolated, shared with other agents, or hybrid — it gates the cross-agent tools.",
+    "The day-trading vertical is analysis-and-journal only by design — there is no execution tool anywhere in the catalog. It enforces YOUR written trading rules; it never tells you to buy or sell.",
+    "Before production, add reasoning/embedding provider blocks to the generated agentb.yaml (see mnemo-cortex/agentb.yaml.example)."
+  ],
+
+  "changelog": [
+    {"version": "0.1.0", "date": "2026-06-14", "changes": ["Initial public release. Engine (config -> tool loader -> compiler -> CLI, PyYAML-only), five verticals (small-business, ecommerce, art-studio, writing, day-trading), profiles + per-tool enable/disable with prerequisite validation, brain templates with placeholder rendering, persona rule-sets compiled into a Mnemo Cortex backend config.", "Day-trading vertical is analysis/journal-only: no execution tool exists, enforced in persona + rules + brain lanes.", "Mnemo Cortex is a cloned dependency, not vendored."]}
+  ],
+
+  "support": {
+    "github_issues": "https://github.com/GuyMannDude/cortex-harness/issues",
+    "homepage": "https://projectsparks.ai/cortex-harness",
+    "docs": "https://github.com/GuyMannDude/cortex-harness#readme"
+  },
+
+  "generated_at": "2026-06-15T00:30:00Z",
+  "spec_url": "https://github.com/GuyMannDude/mnemo-cortex/blob/master/ROBOT-INFO-SPEC.md"
+}
